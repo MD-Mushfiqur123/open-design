@@ -37,6 +37,7 @@ import {
 } from '../runtime/design-system-package-audit';
 import { deriveFileOps } from '../runtime/file-ops';
 import { latestTodosFromEvents } from '../runtime/todos';
+import { createFileSystemReadError } from '../utils/fileSystemErrors';
 import { randomUUID } from '../utils/uuid';
 import type {
   AgentEvent,
@@ -2623,7 +2624,9 @@ async function filesFromEntry(entry: WebkitFileSystemEntry, relativePath: string
 
 function fileFromEntry(entry: WebkitFileSystemFileEntry): Promise<File> {
   return new Promise((resolve, reject) => {
-    entry.file(resolve, reject);
+    entry.file(resolve, (error) => {
+      reject(createFileSystemReadError('Could not read dropped file', error));
+    });
   });
 }
 
@@ -2639,7 +2642,9 @@ function readAllDirectoryEntries(entry: WebkitFileSystemDirectoryEntry): Promise
         }
         entries.push(...batch);
         readNextBatch();
-      }, reject);
+      }, (error) => {
+        reject(createFileSystemReadError('Could not read dropped folder', error));
+      });
     }
     readNextBatch();
   });

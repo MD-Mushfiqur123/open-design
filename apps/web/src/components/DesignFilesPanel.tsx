@@ -5,6 +5,7 @@ import { useT } from '../i18n';
 import type { Dict } from '../i18n/types';
 import { projectFileUrl } from '../providers/registry';
 import type { LiveArtifactWorkspaceEntry, ProjectFile, ProjectFileKind } from '../types';
+import { createFileSystemReadError } from '../utils/fileSystemErrors';
 import type { PluginFolderAgentAction } from './design-files/pluginFolderActions';
 import { getPluginFolderCandidates } from './design-files/pluginFolders';
 import { Icon } from './Icon';
@@ -1628,11 +1629,19 @@ async function filesFromFileSystemEntry(entry: FileSystemEntry): Promise<File[]>
 }
 
 function fileFromEntry(entry: FileSystemFileEntryWithFile): Promise<File> {
-  return new Promise((resolve, reject) => entry.file(resolve, reject));
+  return new Promise((resolve, reject) => {
+    entry.file(resolve, (error) => {
+      reject(createFileSystemReadError('Could not read dropped file', error));
+    });
+  });
 }
 
 function readEntryBatch(reader: FileSystemDirectoryReader): Promise<FileSystemEntry[]> {
-  return new Promise((resolve, reject) => reader.readEntries(resolve, reject));
+  return new Promise((resolve, reject) => {
+    reader.readEntries(resolve, (error) => {
+      reject(createFileSystemReadError('Could not read dropped folder', error));
+    });
+  });
 }
 
 function kindGlyph(kind: ProjectFileKind): string {
